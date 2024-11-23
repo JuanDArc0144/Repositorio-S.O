@@ -1,7 +1,18 @@
 #include <stdio.h>
 
-int arr[][] = {{0,0,0,0,0,0,0,0},{0,1,1,0,0,0,0,1},{0,1,1,0,0,1,0,1},{}};
+int main(){
+    int arreglo;
+    for (size_t i = 0; i < 8; i++)
+    {
+        for (size_t j = 0; i < 8; i++)
+        {
+            //Probando que funciona el github, debe de ser el mismo archivo, en el mismo repositorio
+           
+        }
+        
+    }
+    
 
-int main{
+
     return 0;
-}
+};
