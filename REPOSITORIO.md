@@ -502,12 +502,106 @@ int main() {
 
 ~~~
 
+## Administración de Enttrada y Salida (E/S)
 ### Dispositivos de Bloque y Caracter
 __Dispositivos de Bloque__ 
-Estos son bloques que llegan a contener información, comúmnente de 512 bites o múltiplos de este. Estos son mucho más rapidos en identificar los bloques de memoria, ya que se encargan de optimizar la transferencia de datos, por lo que se utilizan en dispositivos de almacenamiento masivo, como servidores, o sin alejarnos tanto, discos duros o memorias USB: 
+Estos son bloques que llegan a contener información, comúmnente de 512 bites o múltiplos de este. Estos son mucho más rapidos en identificar los bloques de memoria, ya que se encargan de optimizar la transferencia de datos, por lo que se utilizan en dispositivos de almacenamiento masivo, como servidores, o sin alejarnos tanto, discos duros o memorias USB. 
 
 __Dispositivos de Carácter__
 Estos se encargan de guardar memoria de manera secuencial (byte por byte), por lo que no permiten el acceso aleatorio de memoria. Estos suelen ser más lentos que los tipo bloque porque registran la memoria por cada byte, por lo que son más utilizados en dispositivos de E/S como un teclado o impresora, los cuales no admiten un registro de memoria mayor del necesario, especialmente el teclado que requiere solamente un carácter (o varios si se trata de una combinación de teclas, pero sigue siendo menor que el almacenamiento de un disco duro). 
+
+
+__Manejador de dispositivos en C__
+~~~
+class VirtualInputDevice:
+    def __init__(self, name="VirtualDevice", device_type="keyboard"):
+        self.name = name
+        self.device_type = device_type
+        self.connected = False
+        self.input_buffer = []
+
+    def connect(self):
+        if not self.connected:
+            self.connected = True
+            print(f"[INFO] {self.name} conectado.")
+        else:
+            print(f"[WARNING] {self.name} ya está conectado.")
+
+    def disconnect(self):
+        if self.connected:
+            self.connected = False
+            print(f"[INFO] {self.name} desconectado.")
+        else:
+            print(f"[WARNING] {self.name} ya está desconectado.")
+
+    def send_input(self, data):
+        if self.connected:
+            self.input_buffer.append(data)
+            print(f"[INPUT] {data} recibido por {self.name}.")
+        else:
+            print(f"[ERROR] {self.name} no está conectado.")
+
+    def read_input(self):
+        if self.connected and self.input_buffer:
+            data = self.input_buffer.pop(0)
+            print(f"[READ] {data} procesado.")
+            return data
+        elif not self.connected:
+            print(f"[ERROR] {self.name} no está conectado.")
+        else:
+            print(f"[INFO] No hay datos en el buffer.")
+            return None
+
+
+class DeviceManager:
+    def __init__(self):
+        self.devices = {}
+
+    def register_device(self, device_name, device_type="keyboard"):
+        if device_name not in self.devices:
+            self.devices[device_name] = VirtualInputDevice(device_name, device_type)
+            print(f"[INFO] Dispositivo {device_name} registrado como {device_type}.")
+        else:
+            print(f"[WARNING] {device_name} ya está registrado.")
+
+    def unregister_device(self, device_name):
+        if device_name in self.devices:
+            del self.devices[device_name]
+            print(f"[INFO] {device_name} eliminado del registro.")
+        else:
+            print(f"[ERROR] {device_name} no está registrado.")
+
+    def list_devices(self):
+        print("[INFO] Dispositivos registrados:")
+        for device_name, device in self.devices.items():
+            status = "Conectado" if device.connected else "Desconectado"
+            print(f" - {device_name} ({device.device_type}) - {status}")
+
+
+# Simulación
+if __name__ == "__main__":
+    manager = DeviceManager()
+
+    # Registrar y conectar un dispositivo virtual
+    manager.register_device("TecladoVirtual", "keyboard")
+    manager.register_device("MouseVirtual", "mouse")
+
+    manager.list_devices()
+
+    teclado = manager.devices.get("TecladoVirtual")
+    teclado.connect()
+    teclado.send_input("Hola, mundo")
+    teclado.send_input("Otra entrada")
+    teclado.read_input()
+    teclado.read_input()
+    teclado.read_input()
+
+    manager.list_devices()
+    teclado.disconnect()
+    manager.unregister_device("TecladoVirtual")
+    manager.list_devices()
+
+~~~
 
 __Pseudocódigo de como el S.O detecta las interrupciones de E/S__
 ~~~
@@ -537,6 +631,535 @@ funcionMain(){
     ejecutar();
 }
 ~~~
+
+
+__Manejo básico de interrupciones en un sistema simulado__
+~~~
+import time
+import threading
+class InterruptHandler:
+    def __init__(self):
+        self.interrupts = {}  # Diccionario para registrar los manejadores
+
+    def register_interrupt(self, interrupt_type, handler):
+        self.interrupts[interrupt_type] = handler
+
+    def handle_interrupt(self, interrupt_type, *args, **kwargs):
+        if interrupt_type in self.interrupts:
+            print(f"Interrupción detectada: {interrupt_type}")
+            self.interrupts[interrupt_type](*args, **kwargs)
+        else:
+            print(f"Interrupción no manejada: {interrupt_type}")
+
+def keyboard_interrupt(key):
+    print(f"Se presionó la tecla: {key}")
+
+def timer_interrupt():
+    print("Temporizador activado.")
+
+def main():
+    interrupt_handler = InterruptHandler()
+
+    
+    interrupt_handler.register_interrupt("keyboard", keyboard_interrupt)
+    interrupt_handler.register_interrupt("timer", timer_interrupt)
+
+    
+    def simulate_keyboard_interrupt():
+        while True:
+            key = input("Presiona una tecla (q para salir): ")
+            if key == "q":
+                break
+            interrupt_handler.handle_interrupt("keyboard", key)
+
+    def simulate_timer_interrupt():
+        while True:
+            time.sleep(5)  # Temporizador de 5 segundos
+            interrupt_handler.handle_interrupt("timer")
+
+    
+    keyboard_thread = threading.Thread(target=simulate_keyboard_interrupt)
+    timer_thread = threading.Thread(target=simulate_timer_interrupt, daemon=True)
+
+    keyboard_thread.start()
+    timer_thread.start()
+
+    keyboard_thread.join()
+
+if __name__ == "__main__":
+    main()
+~~~
+
+### Estructuras de Datos para el manejo de dispositivos (Cola de Procesos)
+Una cola de interrupciones de E/S es un tipo de estructura de datos que se utiliza para gestionar de manera ordenada las diferentes solicitudes de Entrada y Salida que los procesos se encargan de hacer a los diferentes dispositivos periféricos, como son el hardware completo de la computadora. 
+Como una estructura de datos del tipo Cola, cuenta con las caracteristicas de ese tipo de estructura, entre las cuales se encuentran: 
+1. Posee una estructura FIFO (First In - First Out), en el cual el primer elemento que entra a la cola es el primero que sale (a menos de que se les asigne una prioridad, en tal caso, se debe hacer la selección a partir de la posición del proceso con mayor prioridad). 
+2. Utiliza diferentes algoritmos como SCAN o C-LOOK en los cuales se encarga de optimizar la planificación de los procesos. 
+3. Comúmnete los procesos en este tipo de colas se bloquean hasta que el CPU les permite el acceso o hace una llamada a estos procesos. 
+4. 
+
+
+__Código para una cola con prioridad__
+~~~
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+typedef struct _nodo { //Crea un tipo de dato abstracto
+    int valor;
+    int prioridad;
+    struct _nodo *siguiente; //Sirve como un puntero a si mismo 
+} nodo;
+
+int numero_aleatorio() {
+    return (rand() % 4) + 1;
+}
+
+nodo* genera_proceso() { //regresa direcciones del tipo nodo
+    static int contador = 1; //ese dato se mantiene estatico con el fin de contar el número del proceso  
+    nodo* nuevo = (nodo*)malloc(sizeof(nodo)); //el malloc se encarga de sacar la direccion de memoria, a un tipo de puntero de un nodo llamado nuevo.   
+    if (nuevo == NULL) {
+        printf("Error al asignar memoria.\n"); //Ups, se acabo la memoria. 
+        exit(1);
+    }
+    nuevo->valor = contador++; //El operador flecha sirve para acceder a atributos de un espacio de memoria.
+    nuevo->prioridad = numero_aleatorio();
+    nuevo->siguiente = NULL; 
+    return nuevo;
+}
+
+void insertar_final(nodo** cabeza) {  //mandar la direccion del primer puntero
+    nodo* nuevoNodo = genera_proceso();
+    if (*cabeza == NULL) {
+        *cabeza = nuevoNodo;
+    } else {
+        nodo* temp = *cabeza;
+        while (temp->siguiente != NULL) {
+            temp = temp->siguiente;
+        }
+        temp->siguiente = nuevoNodo;
+    }
+}
+void imprimir_lista(nodo* cabeza) {
+    nodo* temp = cabeza;
+    while (temp != NULL) {
+        printf("|Proceso %p| (Prioridad %p)|direc %p| -> ", temp->valor, temp->prioridad, temp->siguiente);
+        temp = temp->siguiente;
+    }
+    printf("NULL\n");
+}
+
+void atender_prioridad(nodo** cabeza) {
+    if (*cabeza == NULL) {
+        printf("No hay procesos para atender.\n");
+        return;
+    }
+    nodo* temp = *cabeza;
+    nodo* maxNodo = temp;
+    nodo* maxNodoPrevio = NULL;
+    nodo* previo = NULL;
+    // Buscar el nodo con la prioridad más alta
+    
+    // Atender el nodo con prioridad más alta
+    printf("Atendiendo proceso %d", temp->valor);
+    // Eliminar el nodo de la lista
+    *cabeza = temp;
+    free(temp);
+}
+
+int main() {
+    srand(time(NULL));
+    nodo* cabeza = NULL;
+    int op = 0;
+
+    do {
+        printf("1. Genera proceso\n");
+        printf("2. Atiende proceso\n");
+        printf("3. Mostrar Lista de Procesos\n");
+        printf("4. Salir\n");
+        printf("Seleccione una opción: ");
+        scanf("%d", &op);
+
+        switch (op) {
+            case 1:
+                insertar_final(&cabeza);
+                break;
+            case 2:
+                atender_prioridad(&cabeza);
+                break;
+            case 3:
+                imprimir_lista(cabeza);
+                break;
+            case 4:
+                printf("Saliendo...\n");
+                break;
+            default:
+                printf("Opción no válida\n");
+        }
+    } while (op != 4);
+
+    return 0;
+}
+~~~
+
+
+__Manejador de dispositivos a través de una tabla de estructuras__
+~~~
+#include <stdio.h>
+#include <string.h>
+typedef struct {
+    char nombre[20];
+    int estado;               
+    void (*leer)(void);       
+    void (*escribir)(void);  
+} Dispositivo;
+
+void leer_dispositivo(void) {
+    printf("Leyendo del dispositivo...\n");
+}
+
+void escribir_dispositivo(void) {
+    printf("Escribiendo en el dispositivo...\n");
+}
+
+int abrir_dispositivo(Dispositivo *tabla, int n, const char *nombre) {
+    for (int i = 0; i < n; i++) {
+        if (strcmp(tabla[i].nombre, nombre) == 0) {
+            if (tabla[i].estado == 1) {
+                printf("El dispositivo '%s' ya está abierto.\n", nombre);
+                return -1;
+            }
+            tabla[i].estado = 1;
+            printf("Dispositivo '%s' abierto.\n", nombre);
+            return 0;
+        }
+    }
+    printf("Dispositivo '%s' no encontrado.\n", nombre);
+    return -1;
+}
+
+int cerrar_dispositivo(Dispositivo *tabla, int n, const char *nombre) {
+    for (int i = 0; i < n; i++) {
+        if (strcmp(tabla[i].nombre, nombre) == 0) {
+            if (tabla[i].estado == 0) {
+                printf("El dispositivo '%s' ya está cerrado.\n", nombre);
+                return -1;
+            }
+            tabla[i].estado = 0;
+            printf("Dispositivo '%s' cerrado.\n", nombre);
+            return 0;
+        }
+    }
+    printf("Dispositivo '%s' no encontrado.\n", nombre);
+    return -1;
+}
+
+int main() {
+    Dispositivo tabla[] = {
+        {"DiscoDuro", 0, leer_dispositivo, escribir_dispositivo},
+        {"Impresora", 0, leer_dispositivo, escribir_dispositivo},
+        {"Teclado", 0, leer_dispositivo, escribir_dispositivo}
+    };
+    int n = sizeof(tabla) / sizeof(Dispositivo);
+    abrir_dispositivo(tabla, n, "DiscoDuro");
+    abrir_dispositivo(tabla, n, "Teclado");
+
+    printf("Operación de lectura:\n");
+    tabla[0].leer();  // Leer del DiscoDuro
+
+    printf("Operación de escritura:\n");
+    tabla[1].escribir();  // Escribir en el Teclado
+
+    cerrar_dispositivo(tabla, n, "Teclado");
+    cerrar_dispositivo(tabla, n, "DiscoDuro");
+
+    return 0;
+}
+
+~~~
+__Flujo de proceso de lectura de un disco magnetico__
+~~~
+import os
+
+def leer_archivo(ruta_archivo):
+    print("1. Iniciando proceso de lectura.")
+    if not os.path.exists(ruta_archivo):
+        print("2. Error: El archivo no se encuentra en el disco.")
+        return
+    
+    print("2. Archivo encontrado. Ubicando en el disco...")
+    
+    print("3. Accediendo a sectores del disco...")
+    try:
+        with open(ruta_archivo, 'r') as archivo:
+            print("4. Transfiriendo datos a la memoria principal...")
+            contenido = archivo.read()
+            print("5. Lectura completa. Mostrando datos:\n")
+            print(contenido)
+    except Exception as e:
+        print("Error durante la lectura del archivo:", e)
+
+    print("6. Fin del proceso.")
+ruta = "archivo_prueba.txt"
+leer_archivo(ruta)
+~~~
+
+__Operaciones de E/S asincronas utilizando archivos__
+
+~~~
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <aio.h>
+#include <errno.h>
+#include <unistd.h>
+
+#define BUFFER_SIZE 1024
+
+void manejar_error(const char *mensaje) {
+    perror(mensaje);
+    exit(EXIT_FAILURE);
+}
+
+void esperar_operacion(struct aiocb *aio_op) {
+    while (aio_error(aio_op) == EINPROGRESS) {
+        // Esperar a que la operación asíncrona finalice
+        usleep(1000);  // Pequeño retraso para evitar consumir CPU
+    }
+}
+
+int main() {
+    const char *archivo = "archivo_asincrono.txt";
+    const char *mensaje_escritura = "Este es un ejemplo de E/S asíncrona en C.\n";
+
+    char buffer_lectura[BUFFER_SIZE];
+    memset(buffer_lectura, 0, BUFFER_SIZE);
+
+
+    struct aiocb aio_escritura;
+    memset(&aio_escritura, 0, sizeof(struct aiocb));
+    aio_escritura.aio_fildes = open(archivo, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (aio_escritura.aio_fildes == -1) manejar_error("Error al abrir archivo para escritura");
+
+    aio_escritura.aio_buf = mensaje_escritura;
+    aio_escritura.aio_nbytes = strlen(mensaje_escritura);
+    aio_escritura.aio_offset = 0;
+
+    
+    if (aio_write(&aio_escritura) == -1) manejar_error("Error en aio_write");
+
+    printf("Escritura asíncrona iniciada...\n");
+
+    
+    esperar_operacion(&aio_escritura);
+    if (aio_error(&aio_escritura) != 0) manejar_error("Error durante escritura asíncrona");
+    printf("Escritura completada.\n");
+
+
+    struct aiocb aio_lectura;
+    memset(&aio_lectura, 0, sizeof(struct aiocb));
+    aio_lectura.aio_fildes = open(archivo, O_RDONLY);
+    if (aio_lectura.aio_fildes == -1) manejar_error("Error al abrir archivo para lectura");
+
+    aio_lectura.aio_buf = buffer_lectura;
+    aio_lectura.aio_nbytes = BUFFER_SIZE - 1;  // Dejar espacio para el terminador nulo
+    aio_lectura.aio_offset = 0;
+
+    if (aio_read(&aio_lectura) == -1) manejar_error("Error en aio_read");
+
+    printf("Lectura asíncrona iniciada...\n");
+
+    esperar_operacion(&aio_lectura);
+    if (aio_error(&aio_lectura) != 0) manejar_error("Error durante lectura asíncrona");
+    printf("Lectura completada. Datos leídos:\n%s\n", buffer_lectura);
+
+    close(aio_escritura.aio_fildes);
+    close(aio_lectura.aio_fildes);
+
+    return 0;
+}
+
+~~~
+
+### Integración 
+__Programa del algoritmo SCAN__
+
+~~~
+#include <stdio.h>
+#include <stdlib.h>
+
+
+int comparar(const void *a, const void *b) {
+    return (*(int *)a - *(int *)b);
+}
+
+
+void scan(int *solicitudes, int n, int inicio, int direccion, int cilindros) {
+    int i, j, total_movimiento = 0;
+
+    
+    qsort(solicitudes, n, sizeof(int), comparar);
+
+    printf("Orden de acceso al disco: \n");
+    
+    
+    if (direccion == 1) {
+        
+        for (i = 0; i < n; i++) {
+            if (solicitudes[i] >= inicio) {
+                printf("%d ", solicitudes[i]);
+                total_movimiento += abs(inicio - solicitudes[i]);
+                inicio = solicitudes[i];
+            }
+        }
+        
+        if (inicio != cilindros - 1) {
+            total_movimiento += abs(inicio - (cilindros - 1));
+            inicio = cilindros - 1;
+        }
+        
+        for (j = n - 1; j >= 0; j--) {
+            if (solicitudes[j] < inicio) {
+                printf("%d ", solicitudes[j]);
+                total_movimiento += abs(inicio - solicitudes[j]);
+                inicio = solicitudes[j];
+            }
+        }
+    }
+    
+    else {
+        
+        for (i = n - 1; i >= 0; i--) {
+            if (solicitudes[i] <= inicio) {
+                printf("%d ", solicitudes[i]);
+                total_movimiento += abs(inicio - solicitudes[i]);
+                inicio = solicitudes[i];
+            }
+        }
+        
+        if (inicio != 0) {
+            total_movimiento += abs(inicio - 0);
+            inicio = 0;
+        }
+        
+        for (j = 0; j < n; j++) {
+            if (solicitudes[j] > inicio) {
+                printf("%d ", solicitudes[j]);
+                total_movimiento += abs(inicio - solicitudes[j]);
+                inicio = solicitudes[j];
+            }
+        }
+    }
+
+    printf("\nTotal de movimiento de cilindros: %d\n", total_movimiento);
+}
+
+
+int main() {
+    int solicitudes[] = {55, 58, 39, 18, 90, 160, 150, 38, 184};
+    int n = sizeof(solicitudes) / sizeof(solicitudes[0]);
+    int inicio = 50;  
+    int direccion = 1; 
+    int cilindros = 200; 
+
+    printf("Posición inicial de la cabeza: %d\n", inicio);
+    printf("Dirección inicial: %s\n", (direccion == 1) ? "Ascendente" : "Descendente");
+
+    scan(solicitudes, n, inicio, direccion, cilindros);
+
+    return 0;
+}
+
+~~~
+
+__Código de comunicación de diferentes dispositivos de hardware__
+~~~
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct Dispositivo {
+    char nombre[20];          
+    void (*operacion)(const char *mensaje);
+} Dispositivo;
+
+void operacion_disco(const char *mensaje) {
+    printf("[Disco Duro] Procesando mensaje: %s\n", mensaje);
+}
+
+void operacion_impresora(const char *mensaje) {
+    printf("[Impresora] Imprimiendo: %s\n", mensaje);
+}
+
+void operacion_teclado(const char *mensaje) {
+    printf("[Teclado] Entrada recibida: %s\n", mensaje);
+}
+
+Dispositivo *crear_tabla_dispositivos(int *n) {
+    *n = 3;  
+    Dispositivo *tabla = malloc((*n) * sizeof(Dispositivo));
+
+    strcpy(tabla[0].nombre, "DiscoDuro");
+    tabla[0].operacion = operacion_disco;
+
+    strcpy(tabla[1].nombre, "Impresora");
+    tabla[1].operacion = operacion_impresora;
+
+    strcpy(tabla[2].nombre, "Teclado");
+    tabla[2].operacion = operacion_teclado;
+
+    return tabla;
+}
+
+Dispositivo *buscar_dispositivo(Dispositivo *tabla, int n, const char *nombre) {
+    for (int i = 0; i < n; i++) {
+        if (strcmp(tabla[i].nombre, nombre) == 0) {
+            return &tabla[i];
+        }
+    }
+    return NULL;
+}
+
+void comunicar(Dispositivo *origen, Dispositivo *destino, const char *mensaje) {
+    printf("\n[%s] Enviando mensaje a [%s]: %s\n", origen->nombre, destino->nombre, mensaje);
+    destino->operacion(mensaje);
+}
+
+int main() {
+    int n;
+    Dispositivo *tabla = crear_tabla_dispositivos(&n);
+
+    Dispositivo *disco = buscar_dispositivo(tabla, n, "DiscoDuro");
+    Dispositivo *impresora = buscar_dispositivo(tabla, n, "Impresora");
+    Dispositivo *teclado = buscar_dispositivo(tabla, n, "Teclado");
+
+    if (disco && impresora && teclado) {
+        comunicar(teclado, disco, "Archivo nuevo recibido.");
+        comunicar(disco, impresora, "Imprimir archivo.");
+        comunicar(impresora, teclado, "Impresión completada.");
+    } else {
+        printf("Error al inicializar los dispositivos.\n");
+    }
+
+    
+    free(tabla);
+
+    return 0;
+}
+
+~~~ 
+
+### Como los Sistemas Operativos utilizan memoria caché
+
+La memoria caché es un tipo de memoria muy rápida que se encarga de guardar los procesos más recientes con el fin de acceder a ellos más facilmente. Esto ayuda a que los procesos que utilizan funciones de lectura/escritura dentro del disco duro puedan realizar sus acciones más facilmente, ya que este disco duro resulta ser más lento que este tipo de memoria. 
+
+
+
+
+
+
+
+
 
 
 
