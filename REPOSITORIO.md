@@ -288,6 +288,260 @@ Cuando el CPU necesita acceder a un proceso en especifico, utiliza en esta ocasi
 2. Al tratarse de tamaños personalizados, ocurre menos fragmentación interna dentro del disco duro. 
 3. Los segmentos son capaces de personalizarse a las necesidades de cada proceso (por lo que po ejemplo, una pila puede aumentar de tamaño si así es requerido). 
 
+---
+## Administración de Memoria Virtual 
+__Programa LRU__
+~~~
+#include <stdio.h>
+#include <limits.h>
+
+void imprimirEstado(int frames[], int numFrames) {
+    printf("Memoria: ");
+    for (int i = 0; i < numFrames; i++) {
+        if (frames[i] == -1) {
+            printf("[ ] ");
+        } else {
+            printf("[%d] ", frames[i]);
+        }
+    }
+    printf("\n");
+}
+
+int buscarEnMemoria(int frames[], int numFrames, int pagina) {
+    for (int i = 0; i < numFrames; i++) {
+        if (frames[i] == pagina) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int encontrarLRU(int tiempos[], int numFrames) {
+    int lruIndex = 0;
+    int minTiempo = tiempos[0];
+    for (int i = 1; i < numFrames; i++) {
+        if (tiempos[i] < minTiempo) {
+            minTiempo = tiempos[i];
+            lruIndex = i;
+        }
+    }
+    return lruIndex;
+}
+
+void lru(int paginas[], int numPaginas, int numFrames) {
+    int frames[numFrames];
+    int tiempos[numFrames];
+    int fallosDePagina = 0;
+
+    for (int i = 0; i < numFrames; i++) {
+        frames[i] = -1; // Indica que el marco está vacío
+        tiempos[i] = 0;
+    }
+
+    for (int t = 0; t < numPaginas; t++) {
+        int paginaActual = paginas[t];
+        printf("\nAccediendo a página: %d\n", paginaActual);
+
+        int indice = buscarEnMemoria(frames, numFrames, paginaActual);
+
+        if (indice != -1) {
+            tiempos[indice] = t;
+            printf("Página %d ya está en memoria.\n", paginaActual);
+        } else {
+            fallosDePagina++;
+            int posicionReemplazar;
+
+            if (buscarEnMemoria(frames, numFrames, -1) != -1) {
+                posicionReemplazar = buscarEnMemoria(frames, numFrames, -1);
+            } else {
+                posicionReemplazar = encontrarLRU(tiempos, numFrames);
+                printf("Reemplazando página %d con página %d.\n", frames[posicionReemplazar], paginaActual);
+            }
+
+            frames[posicionReemplazar] = paginaActual;
+            tiempos[posicionReemplazar] = t;
+        }
+
+        imprimirEstado(frames, numFrames);
+    }
+
+    printf("\nTotal de fallos de página: %d\n", fallosDePagina);
+}
+
+int main() {
+    int numPaginas, numFrames;
+
+    printf("Introduce el número de páginas: ");
+    scanf("%d", &numPaginas);
+    int paginas[numPaginas];
+    for (int i = 0; i < numPaginas; i++) {
+        printf("Introduce la página %d: ", i + 1);
+        scanf("%d", &paginas[i]);
+    }
+
+    printf("Introduce el número de marcos de página: ");
+    scanf("%d", &numFrames);
+
+    lru(paginas, numPaginas, numFrames);
+
+    return 0;
+}
+~~~
+
+## Diagrama explicando la localización de memoria física a través de memoria virtual. 
+![Diagrama explicando la localización de memoria física a través de memoria virtual](diagrama.png)
+
+## Integración
+__Análisis de administración de Memoria Virtual en mi S.O (Fedora)__ 
+
+Fedora utiliza un sistema de paginación para almacenar los procesos en memoria virtual (normalmente un espacio de 4KB por página). Esta información se almacena en pequeños bloques de páginas virtuales en la memoria RAM según se requiera, y las páginas que no se requieran de manera inmediata se almacenan en el SWAP o memoria de intercambio del sistema. Cada proceso tiene su propia paginación virtual, lo que permite el aislamient y seguridad entre procesos. Además, cuenta con un proceso en segundo plano llamado kswapd (tambien llamado el demonio de intercambio 😈), este se encarga de monitorear el uso de la memoria y el SWAP. 
+
+__Programa de simulación de la memoria SWAP__
+~~~
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct {
+    int pid;   
+    int size;  
+} Process;
+
+typedef struct {
+    int total_memory;  
+    int used_memory;   
+    Process *physical_memory[10]; 
+    Process *swap_space[10];      
+    int swap_count;               
+    int physical_count;           
+} Memory;
+
+void init_memory(Memory *memory, int total_memory) {
+    memory->total_memory = total_memory;
+    memory->used_memory = 0;
+    memory->swap_count = 0;
+    memory->physical_count = 0;
+    memset(memory->physical_memory, 0, sizeof(memory->physical_memory));
+    memset(memory->swap_space, 0, sizeof(memory->swap_space));
+}
+
+void add_process(Memory *memory, Process *process) {
+    if (memory->used_memory + process->size <= memory->total_memory) {
+        memory->physical_memory[memory->physical_count++] = process;
+        memory->used_memory += process->size;
+        printf("Proceso %d agregado a memoria física (tamaño: %d).\n", process->pid, process->size);
+    } else {
+        memory->swap_space[memory->swap_count++] = process;
+        printf("Proceso %d movido al espacio de swap (tamaño: %d).\n", process->pid, process->size);
+    }
+}
+
+void remove_process(Memory *memory, int pid) {
+    for (int i = 0; i < memory->physical_count; i++) {
+        if (memory->physical_memory[i]->pid == pid) {
+            printf("Proceso %d eliminado de memoria física.\n", pid);
+            memory->used_memory -= memory->physical_memory[i]->size;
+            for (int j = i; j < memory->physical_count - 1; j++) {
+                memory->physical_memory[j] = memory->physical_memory[j + 1];
+            }
+            memory->physical_memory[--memory->physical_count] = NULL;
+            return;
+        }
+    }
+    printf("Proceso %d no encontrado en memoria física.\n", pid);
+}
+void move_from_swap(Memory *memory) {
+    if (memory->swap_count == 0) {
+        printf("No hay procesos en el swap.\n");
+        return;
+    }
+    Process *process = memory->swap_space[0];
+    if (memory->used_memory + process->size <= memory->total_memory) {
+        // Mover a memoria física
+        add_process(memory, process);
+        // Reorganizar el swap
+        for (int i = 0; i < memory->swap_count - 1; i++) {
+            memory->swap_space[i] = memory->swap_space[i + 1];
+        }
+        memory->swap_space[--memory->swap_count] = NULL;
+    } else {
+        printf("No hay suficiente espacio en memoria física para mover el proceso %d.\n", process->pid);
+    }
+}
+void show_status(Memory *memory) {
+    printf("\nEstado de la memoria:\n");
+    printf("Memoria física usada: %d/%d\n", memory->used_memory, memory->total_memory);
+    printf("Procesos en memoria física:\n");
+    for (int i = 0; i < memory->physical_count; i++) {
+        printf("  PID: %d, Tamaño: %d\n", memory->physical_memory[i]->pid, memory->physical_memory[i]->size);
+    }
+    printf("Procesos en swap:\n");
+    for (int i = 0; i < memory->swap_count; i++) {
+        printf("  PID: %d, Tamaño: %d\n", memory->swap_space[i]->pid, memory->swap_space[i]->size);
+    }
+    printf("----------------------------------------\n");
+}
+int main() {
+    Memory memory;
+    init_memory(&memory, 100); // Inicializar la memoria con 100 unidades
+    Process p1 = {1, 40};
+    Process p2 = {2, 30};
+    Process p3 = {3, 50};
+    Process p4 = {4, 20};
+    add_process(&memory, &p1);
+    add_process(&memory, &p2);
+    add_process(&memory, &p3);
+    add_process(&memory, &p4);
+    show_status(&memory);
+    remove_process(&memory, 1);
+    move_from_swap(&memory);
+    show_status(&memory);
+
+    return 0;
+}
+
+~~~
+
+### Dispositivos de Bloque y Caracter
+__Dispositivos de Bloque__ 
+Estos son bloques que llegan a contener información, comúmnente de 512 bites o múltiplos de este. Estos son mucho más rapidos en identificar los bloques de memoria, ya que se encargan de optimizar la transferencia de datos, por lo que se utilizan en dispositivos de almacenamiento masivo, como servidores, o sin alejarnos tanto, discos duros o memorias USB: 
+
+__Dispositivos de Carácter__
+Estos se encargan de guardar memoria de manera secuencial (byte por byte), por lo que no permiten el acceso aleatorio de memoria. Estos suelen ser más lentos que los tipo bloque porque registran la memoria por cada byte, por lo que son más utilizados en dispositivos de E/S como un teclado o impresora, los cuales no admiten un registro de memoria mayor del necesario, especialmente el teclado que requiere solamente un carácter (o varios si se trata de una combinación de teclas, pero sigue siendo menor que el almacenamiento de un disco duro). 
+
+__Pseudocódigo de como el S.O detecta las interrupciones de E/S__
+~~~
+estadoProcesador = ejecutandoTarea;
+interrupcionesProcesador = true;
+
+funcion_de_interrupcion(){
+    guardarContexto(estadoProcesador);
+    datoEntrada = leerTecla();
+    procesarEvento(datoEntrada);
+    restaurarContexto(estadoProcesador);
+}
+
+funcion ejecutar(){
+    mientras(true){
+        si(interrupcionesProcesador){
+            estadoProcesador = Esperando;
+            esperarE/S();
+        }
+        si(interrupcion==true){
+            interrupcionE/S();
+        }
+    }
+}
+
+funcionMain(){
+    ejecutar();
+}
+~~~
+
+
+
+
+
 
 
 
