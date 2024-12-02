@@ -36,7 +36,7 @@ int main(){
         switch (decision)
         {
         case 1:{
-
+            
         }
         case 4:
         printf("FIN");
