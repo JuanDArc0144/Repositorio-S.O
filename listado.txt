@@ -1,0 +1,12 @@
+total 244
+-rw-r--r--. 1 juanalbertosh juanalbertosh  15571 dic  6 13:38 Actividad EyS Linux.md
+-rw-r--r--. 1 juanalbertosh juanalbertosh   1475 dic 10 14:47 ActividadDiscos.md
+-rw-r--r--. 1 juanalbertosh juanalbertosh   3955 nov 24 07:43 Conteo de islas.c
+-rw-r--r--. 1 juanalbertosh juanalbertosh 160798 dic  2 09:52 diagrama.png
+-rw-r--r--. 1 juanalbertosh juanalbertosh   2809 nov 13 14:52 EjemploLista.c
+-rw-r--r--. 1 juanalbertosh juanalbertosh      0 dic 10 14:49 listado.txt
+-rw-r--r--. 1 juanalbertosh juanalbertosh    972 nov 24 19:15 MDinamica.c
+-rw-r--r--. 1 juanalbertosh juanalbertosh   3091 nov 24 08:25 Memoria.c
+-rw-r--r--. 1 juanalbertosh juanalbertosh    704 nov  7 14:08 Recursividad2.c
+-rw-r--r--. 1 juanalbertosh juanalbertosh  41745 dic  2 11:44 REPOSITORIO.md
+mar 10 dic 2024 14:53:53 CST
