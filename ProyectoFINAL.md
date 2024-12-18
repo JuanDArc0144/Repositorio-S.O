@@ -225,6 +225,26 @@ Este se refiere a los mecanismos internos que implementa el sistema para control
 Esta se encarga de proteger el sistema operativo contra amenazas tanto internas como externas, así como accesos no autorizados, malware, ataques de red y diferentes vulnerabilidades del sistema. Esto con el objetivo de garantizar la confidencialidad, integridad y disponibilidad de la información y los recursos del sistema. 
 
 ### Objetivos principales de Protección y Seguridad
+__Confidencialidad:__
+Esta es una propiedad de los sistemas de seguridad que se encarga de garantizar que la información solo se encuentre disponibles para las personas, sistemas o procesos que tengan los permisos necesarios para interactuar con los archivos y elementos del equipo, ya sea para procesos de lectura o escritura. Esta propiedad existe principalmente con el fin de evitar el acceso no autorizado, esto a través de diferentes técnicas de autenticación o algún tipo de cifrado. 
+Un ejemplo podría ser en un banco, en el cuál solo el propietario de la cuenta tenga accesos a sus propios datos bancarios. 
+__Integridad:__
+Esta propiedad se encarga de que la información se maneje de manera precisa, completa y sin alterar de manera indebida, ya sea a través de la transmisión de datos o la escritura de estos. Un ejemplo práctica sería en un hostipal o instalación médica, en el cual el historial de registros de los pacientes no pueda ser alterado por los médicos, solo agregar nuevos registros médicos. 
+__Disponibilidad:__
+Esta propiedad se encarga de asegurar que los sistemas, servicios y datos permanezcan accesibles cuado estos se necesiten por los usuarios autorizados, esto a con el fin de evitar malas prácticas como redundancia innecesaria y la capacidad de recuerar información ante desastres o ataques de denegación DoS. Un ejemplo sería en un sistema de emergencia, que los servicios especiales se encuentren disponibles las 24 horas. 
+__Autenticidad:__
+Esta se encarga de confirmar la identidad de los diferentes usuarios o sistemas con el fin de evitar suplantaciones. 
+__Auditoría:__
+Esta permite el registro de las diferentes actividades con el fin de llevar una bitácora o registro con el fin de identificar anomalías o rastrear incidentes. 
+
+## Clasificación de los mecanismos de seguridad
+__Seguridad física:__
+Esta se encarga de proteger los diferentes elementos físicos o de hardware del equipo, las instalaciones y el personal. Estos cuidados pueden ir desde lo particular como ataques de robos físicos de datos, hasta tomar enfoques más generales como desastres naturales. Este concepto implementa mecanismos como sistemas de vigilacia y alarmas y la creación de instalaciones adecuadas. 
+__Seguridad Lógica:__
+Esta se encarga de proteger los datos y el software de accesos no autorizados, o diferentes alteraciones o destrucciones, estos mediante a implementación de diferentes medidas y controles digitales. Este sus medidas de seguridad más importantes se encuentran el cifrado de datos y el soporte para anti-virus y malware. 
+__Seguridad de red:__
+Este se encarga de proteger la integridad, confidencialidad y disponibilidad de la información mientras es transmitida por medios de web o redes de comunicación, esto con el fin de evitar accesos no autorizados y ataques. 
+
 
 
    
