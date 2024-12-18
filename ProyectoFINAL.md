@@ -232,18 +232,127 @@ __Integridad:__
 Esta propiedad se encarga de que la información se maneje de manera precisa, completa y sin alterar de manera indebida, ya sea a través de la transmisión de datos o la escritura de estos. Un ejemplo práctica sería en un hostipal o instalación médica, en el cual el historial de registros de los pacientes no pueda ser alterado por los médicos, solo agregar nuevos registros médicos. 
 __Disponibilidad:__
 Esta propiedad se encarga de asegurar que los sistemas, servicios y datos permanezcan accesibles cuado estos se necesiten por los usuarios autorizados, esto a con el fin de evitar malas prácticas como redundancia innecesaria y la capacidad de recuerar información ante desastres o ataques de denegación DoS. Un ejemplo sería en un sistema de emergencia, que los servicios especiales se encuentren disponibles las 24 horas. 
-__Autenticidad:__
+__Autenticación:__
 Esta se encarga de confirmar la identidad de los diferentes usuarios o sistemas con el fin de evitar suplantaciones. 
 __Auditoría:__
 Esta permite el registro de las diferentes actividades con el fin de llevar una bitácora o registro con el fin de identificar anomalías o rastrear incidentes. 
+__Autorización:__
 
 ## Clasificación de los mecanismos de seguridad
 __Seguridad física:__
-Esta se encarga de proteger los diferentes elementos físicos o de hardware del equipo, las instalaciones y el personal. Estos cuidados pueden ir desde lo particular como ataques de robos físicos de datos, hasta tomar enfoques más generales como desastres naturales. Este concepto implementa mecanismos como sistemas de vigilacia y alarmas y la creación de instalaciones adecuadas. 
+Esta se encarga de proteger los diferentes elementos físicos o de hardware del equipo, las instalaciones y el personal. Estos cuidados pueden ir desde lo particular como ataques de robos físicos de datos, hasta tomar enfoques más generales como desastres naturales. Este concepto implementa mecanismos como sistemas de vigilacia y alarmas y la creación de instalaciones adecuadas. Este se encarga de protege el hardware donde reside el sistema operativo, asegurando que personas no autorizadas no puedan manipular físicamente los dispositivos. Entre sus sistemas de autorización se encuentran 
 __Seguridad Lógica:__
-Esta se encarga de proteger los datos y el software de accesos no autorizados, o diferentes alteraciones o destrucciones, estos mediante a implementación de diferentes medidas y controles digitales. Este sus medidas de seguridad más importantes se encuentran el cifrado de datos y el soporte para anti-virus y malware. 
+Esta se encarga de proteger los datos y el software de accesos no autorizados, o diferentes alteraciones o destrucciones, estos mediante a implementación de diferentes medidas y controles digitales. Este sus medidas de seguridad más importantes se encuentran el cifrado de datos y el soporte para anti-virus y malware. Se encarga de asegurar que los usuarios o procesos no autorizados puedan acceder a los S.O y sus funciones.
 __Seguridad de red:__
-Este se encarga de proteger la integridad, confidencialidad y disponibilidad de la información mientras es transmitida por medios de web o redes de comunicación, esto con el fin de evitar accesos no autorizados y ataques. 
+Este se encarga de proteger la integridad, confidencialidad y disponibilidad de la información mientras es transmitida por medios de web o redes de comunicación, esto con el fin de evitar accesos no autorizados y ataques. Este se encarga de prevenir ejecuciones externas a través de firewalls, IPS y segmentación de la red, bloqueando bloques de intentos de acceso no autorizados. 
+
+## Funciones del sistema de protección
+Su objetivo principal consiste en determinar quien esta solicitando acceso al sistema, esto mediante su nombre de usuario o un ID único. Además se encarga de registrar y permitir que acciones se encuentran autorizadas para cada usuario, de esta manera permite que los archivos no puedan ser modificados o `mv`. 
+__Ejemplo práctico:__
+En un caso hipotetico, tenemos un usuario que instaló Linux, en el cual tiene sus archivos privados en una carpeta dentro del directorio raíz, para la cual puede realizar modificaciones a través del comando `sudo`. 
+Después, tenemos un usuario malicioso, el cual quiere eliminar los archivos desde terminal, pero al tratarse de una carpeta en el directorio raíz, tiene que acceder desde `sudo`. 
+```python
+# Definir la matriz de acceso
+matriz_acceso = {
+    "Admin": {
+        "DocumentosConfidenciales": ["R", "W", "X"],
+        "Inventario": ["R", "W", "X"],
+        "ReportesFinancieros": ["R", "W", "X"]
+    },
+    "Manager": {
+        "DocumentosConfidenciales": ["R"],
+        "Inventario": ["R", "W"],
+        "ReportesFinancieros": ["R"]
+    },
+    "Employee": {
+        "DocumentosConfidenciales": [],
+        "Inventario": ["R"],
+        "ReportesFinancieros": []
+    }
+}
+
+# Función para verificar acceso
+def verificar_acceso(usuario, recurso, permiso):
+    """
+    Verifica si un usuario tiene un permiso específico sobre un recurso.
+    
+    Args:
+    usuario (str): Nombre del usuario.
+    recurso (str): Nombre del recurso.
+    permiso (str): Permiso a verificar ("R", "W", "X").
+    
+    Returns:
+    bool: True si el usuario tiene permiso, False en caso contrario.
+    """
+    permisos = matriz_acceso.get(usuario, {}).get(recurso, [])
+    return permiso in permisos
+
+# Ejemplo de uso
+usuarios = ["Admin", "Manager", "Employee"]
+recursos = ["DocumentosConfidenciales", "Inventario", "ReportesFinancieros"]
+permisos = ["R", "W", "X"]
+
+# Probar acceso
+for usuario in usuarios:
+    for recurso in recursos:
+        for permiso in permisos:
+            tiene_acceso = verificar_acceso(usuario, recurso, permiso)
+            print(f"¿{usuario} puede {permiso} en {recurso}? {'Sí' if tiene_acceso else 'No'}")
+```
+La matriz de acceso en un sistema operativo funciona como una tabla que asocia usuarios (o procesos) con recursos, especificando los permisos que tienen. En la práctica, esta matriz no se implementa literalmente como una tabla, sino que se organiza en estructuras más eficientes:
+__Listas de Control de Acceso (ACL):__
+Cada recurso almacena una lista con los permisos de los usuarios o grupos.
+__Capacidades:__
+Cada usuario o proceso tiene una lista de recursos a los que puede acceder junto con los permisos asociados.
+__EJEMPLO:__
+```python
+# Matriz de acceso
+matriz_acceso = {
+    "Admin": {
+        "DocumentosConfidenciales": ["R", "W", "X"],
+        "Inventario": ["R", "W", "X"],
+        "ReportesFinancieros": ["R", "W", "X"]
+    },
+    "Manager": {
+        "DocumentosConfidenciales": ["R"],
+        "Inventario": ["R", "W"],
+        "ReportesFinancieros": ["R"]
+    },
+    "Employee": {
+        "DocumentosConfidenciales": [],
+        "Inventario": ["R"],
+        "ReportesFinancieros": []
+    }
+}
+
+# Función para verificar acceso
+def verificar_acceso(usuario, recurso, permiso):
+    permisos = matriz_acceso.get(usuario, {}).get(recurso, [])
+    return permiso in permisos
+
+# Intento de acceso
+usuario = "Employee"
+recurso = "DocumentosConfidenciales"
+permiso = "W"
+
+if verificar_acceso(usuario, recurso, permiso):
+    print(f"Acceso concedido: {usuario} puede realizar '{permiso}' en {recurso}.")
+else:
+    print(f"Acceso denegado: {usuario} no tiene permisos para realizar '{permiso}' en {recurso}.")
+
+    # Registro del intento fallido
+    from datetime import datetime
+    intento = {
+        "Fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "Usuario": usuario,
+        "Recurso": recurso,
+        "Operación": permiso,
+        "Resultado": "Acceso denegado",
+        "IP": "192.168.1.101"
+    }
+    print("Registro de Auditoría:", intento)
+```
+
 
 
 
