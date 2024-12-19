@@ -352,11 +352,113 @@ else:
     }
     print("Registro de Auditoría:", intento)
 ```
+Este modelo se utiliza principalmente para poder gestionar los permisos de los diferentes usuarios o procesos sobre los diferentes recursos que posee el equipo. Con este mecanismo nos aseguramos que cada interacción con los diferentes archivos, dispositivos u otros componentes del equipo se realicen dentro de los privilegios asignados, ya sea por el usuario o por el sistema de seguridad y protección en el sistema operativo. 
+En este caso, cada fila representa un usuario o proceso creado, mientras que cada columna representa un recurso del sistema, mientras que en las celdas se despliegan los permisos especificos para la combinación de estos componentes. 
+__Escenario simulado de protección de recursos__
+En un caso hipotetico, supongamos que estamos en una empresa en la que se implementa una tabla similar para manejar los privilegios y los permisos sobre los recursos. En este escenario, un empleado intenta acceder a un archivo de caractér confidencial, con solo permisos de lectura para su tipo de usuario. En este caso, el sistema revisa la lista de privilegios, y le manda el siguiente mensaje al usuario: 
+```
+Acceso denegado: No tienes permisos para leer Archivo1.txt.
+```
+## Protección basada en el lenguaje 
+Esta se refiere al uso de caracteristicas inherentes de un lenguaje de programación, en las cuales se garantiza que los programas diseñados en estos iguen una serie de reglas específicas de acceso y de uso de recursos. Este enfoque se centra en utilizar las capacidades del lenguaje para prevenir diferentes errores y violaciones de seguridad, con el fin de reducir la necesidad de depender de manera completa del sistema operativo o el hardware. 
 
+__Ejemplo aplicado a Java__:
+```java
+public class memoria{
+    public static void main(String[] args) {
+        String despedida = "Buenas noches";
+        System.out.println(despedida);
+        saludo = null; 
+        try {
+            System.out.println(despedida.length());
+        } catch (NullPointerException e) {
+            System.out.println("Es nulo");
+        }
+    }
+}
+```
+En el ejemplo anterior puede observarse esto, con el fin de reducir y eliminar la memoria que no se utiliza, Java implementa el Gargabe Collector, que se encarga de recolectar aquellos valores que quedan como null o son innutilizados, con el fin de reducir la memoria utilizada. 
 
+### Diferentes entre protección de lenguaje y protección de los S.O
+__Basado en Lenguaje:__
+Este enfoque se encarga de utilizar las caracteristicas del propio lenguaje de programación, con el fin de garantizar un acceso seguro y un buen manejo de los recursos. Entre sus pricipales ventajas se encuentran la detección de errores en el tiempo de compilación o ejecución; la posibilidad de reducir errores humanos y ser independiente del harware. 
 
-
+__Basada en el S.O:__
+Este enfoque se centra en el acceso a los recursos del sistema mediante diferentes políticas y mecanismos. Entre sus ventajas se encuentran que poseen una tabla de permisos propia con sus propios niveles de privilegios, además de contar con diferentes espacios de memoria protegidos. 
    
+## Amenazas del Sistema
+1. __Malware:__
+   Este consiste en diversos programas diseñados con el fin de dañar, interrumpir o robar la información de un sistema operativo. Entre ellos pueden encontrarse los virus (los más conocidos), los cuales consisten en adjuntar muchos archivos y  duplicarse ellos mismos; los troyanos que son programas de indole confiable pero que se encargar de realizar actividades maliciosas en el segundo plano; los ransomware que se encargan de cifrar los datos del usuario y exigir un rescate a través de un pago.
+
+2. __Ataques de Fuerza Bruta:__
+   Este consiste en probar diferentes combinaciones de contraseñas o claves hasta encontrar aquella que sea correcta, esto con el fin de acceder a archvos cifrados que requieran una clave (se requiere de un archivo que se le suele llamar "diccionario" que son un conjunto de posibles palabras que sean probables se encuentren incluidas en la clave).
+
+3. __Inyección de Código:__
+   Esta ocurre cuando un atacante inserta código malicioso en el sistema o aplicación que se encuentre vulnerable, logrando ejecutar comandos no autorizados (las más comunes suelen ser inyeccionesSQL, en las cuales se realizan acciones dentro de una BD).
+
+## Mecanismos de verificación: 
+__Autenticación Multifactor:__
+Esta requiere que los usuarios proporcionen dos o más factores de autenticación de diferentes categorias, con el fin de verificar su identidad. 
+
+__Control de integridad:__
+Este se encarga de asegurar que los datos no han sido modificados, corrompidos o manipulados sin alguna autorización previa, esto con el fin de mantener la confianza en la exactitud y la consistencia de la información. 
+
+| Usuario | Admin |No-Admin |
+|----------|----------|----------|
+| Sistema   | Lectura/Escritura   | Lectura   |
+| Configuración    | Lectura/Escritura   | NO   |
+| Aplicaciones   | Lectura/Escritura   | Lectura/Escritura   |
+
+## Cifrado
+__Cifrado simétrico:__
+En este tipo de cifrado, la clave secreta o HASH se utiliza tanto para poder encriptar como desencriptar los diferentes tipos de datos. En este tipo de cifrado, tanto el emisor como el receptor deben conocer la clave y mantenerla en secreto con el fin de garantizar la seguridad. Este se utiliza comúnmente al hacer un cifrado completo del disco con el fin de mantener la seguridad en los datos, en este se utilizan diferentes algoritmos como AES (Advanced Encryption Standard).
+
+__Cifrado asimetrico:__
+En este tipo de cifrado, se utilizan dos claves diferentes pero que se encuentran relacionadas matemáticamente, en la cuales una es publica y la otra es privada. La púbica se encarga de cifrar los datos, mientras que la privada se encarga de descifrar el mensaje enviado. Este es altamente utilizado en protocolos SSH (Secure Shell), con el cual se puede acceder de forma segura a diferentes servidores remotos, en el cual en lugar de utilizar una contraseña normal, se utilizan un par de claves para autentificar al usuario. 
+
+__EJEMPLO:__
+```python
+from cryptography.fernet import Fernet
+
+def generar_clave():
+    clave = Fernet.generate_key()
+    return clave
+
+def cifrar_archivo(nombre_archivo, clave):
+    fernet = Fernet(clave)
+    
+    with open(nombre_archivo, 'rb') as archivo:
+        contenido = archivo.read()
+    
+    contenido_cifrado = fernet.encrypt(contenido)
+    
+    with open(nombre_archivo + '.cifrado', 'wb') as archivo_cifrado:
+        archivo_cifrado.write(contenido_cifrado)
+    print(f"El archivo '{nombre_archivo}' ha sido cifrado y guardado como '{nombre_archivo}.cifrado'.")
+
+def descifrar_archivo(nombre_archivo_cifrado, clave):
+    fernet = Fernet(clave)
+    
+    with open(nombre_archivo_cifrado, 'rb') as archivo_cifrado:
+        contenido_cifrado = archivo_cifrado.read()
+    
+    contenido_descifrado = fernet.decrypt(contenido_cifrado)
+    
+    nombre_archivo_original = nombre_archivo_cifrado.replace('.cifrado', '.descifrado')
+    with open(nombre_archivo_original, 'wb') as archivo_descifrado:
+        archivo_descifrado.write(contenido_descifrado)
+    print(f"El archivo '{nombre_archivo_cifrado}' ha sido descifrado y guardado como '{nombre_archivo_original}'.")
+
+if __name__ == "__main__":
+    nombre_archivo = "archivo_ejemplo.txt"
+    
+    clave = generar_clave()
+    print(f"Clave generada: {clave.decode()}")
+    
+    cifrar_archivo(nombre_archivo, clave)
+    
+    descifrar_archivo(nombre_archivo + '.cifrado', clave)
+```
 
 
 
